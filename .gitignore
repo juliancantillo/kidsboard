@@ -15,3 +15,7 @@
 *.db-shm
 
 assets/*
+
+# Downloaded tailwindcss standalone CLI (one per host arch). The generated
+# CSS itself (internal/view/static/css/kidsboard.css) IS committed.
+/bin/

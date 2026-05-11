@@ -1,4 +1,4 @@
-.PHONY: check test build generate run seed clean docker docker-pi docker-multiarch buildx-bootstrap helm-lint helm-template
+.PHONY: check test build css css-clean fmt generate run seed clean docker docker-pi docker-multiarch buildx-bootstrap helm-lint helm-template
 
 # Override on the command line: `make docker-pi REGISTRY=ghcr.io/me VERSION=0.1.0`
 REGISTRY  ?= kidsboard
@@ -6,15 +6,66 @@ VERSION   ?= dev
 IMAGE     ?= $(REGISTRY):$(VERSION)
 PLATFORMS ?= linux/amd64,linux/arm64
 
-# Default target: run tests, then build. Used as the single CI/local
-# verification step — anything green here is shippable.
-check: test build
+# Tailwind CSS standalone binary. Pinned for reproducibility; bump together.
+TAILWIND_VERSION ?= v3.4.17
+TAILWIND_BIN     ?= bin/tailwindcss
+CSS_INPUT        := input.css
+CSS_OUTPUT       := internal/view/static/css/kidsboard.css
+
+# Default target: build CSS, then run tests + build. Anything green here is
+# shippable.
+check: css test build
 
 test:
 	go test ./...
 
-build:
+# Build embeds the CSS via the existing //go:embed in internal/view/static.go,
+# so the stylesheet must exist on disk before `go build`.
+build: css
 	go build ./...
+
+# Compile the Tailwind stylesheet from input.css to the embedded static path.
+# Falls back to downloading the standalone CLI when `tailwindcss` isn't on the
+# PATH — no Node required.
+css: $(CSS_OUTPUT)
+
+$(CSS_OUTPUT): $(CSS_INPUT) tailwind.config.js $(shell find internal/view/templates -name '*.html')
+	@mkdir -p $(dir $(CSS_OUTPUT))
+	@if command -v tailwindcss >/dev/null 2>&1; then \
+		echo "tailwindcss -> $(CSS_OUTPUT)"; \
+		tailwindcss -i $(CSS_INPUT) -o $(CSS_OUTPUT) --minify; \
+	else \
+		$(MAKE) $(TAILWIND_BIN); \
+		echo "$(TAILWIND_BIN) -> $(CSS_OUTPUT)"; \
+		$(TAILWIND_BIN) -i $(CSS_INPUT) -o $(CSS_OUTPUT) --minify; \
+	fi
+
+# Download the standalone Tailwind CLI for the host's OS+arch on demand.
+# Cached at bin/tailwindcss; delete it with `make css-clean`.
+$(TAILWIND_BIN):
+	@mkdir -p $(dir $(TAILWIND_BIN))
+	@OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	ARCH=$$(uname -m); \
+	case "$$OS" in \
+	  darwin)  TWOS=macos ;; \
+	  linux)   TWOS=linux ;; \
+	  *) echo "unsupported OS: $$OS" >&2; exit 1 ;; \
+	esac; \
+	case "$$ARCH" in \
+	  x86_64|amd64) TWARCH=x64 ;; \
+	  aarch64|arm64) TWARCH=arm64 ;; \
+	  *) echo "unsupported arch: $$ARCH" >&2; exit 1 ;; \
+	esac; \
+	URL="https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-$$TWOS-$$TWARCH"; \
+	echo "downloading $$URL"; \
+	curl -fsSL -o $(TAILWIND_BIN) "$$URL"; \
+	chmod +x $(TAILWIND_BIN)
+
+css-clean:
+	rm -f $(CSS_OUTPUT) $(TAILWIND_BIN)
+
+fmt:
+	gofmt -w .
 
 # Regenerate sqlc code from queries/ + migrations/. Run after schema or
 # query changes; commit the generated output under internal/storage/sqldb/.

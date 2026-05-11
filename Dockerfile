@@ -17,6 +17,9 @@
 
 ARG GO_VERSION=1.26-alpine
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian12:nonroot
+# Standalone Tailwind CLI version. Bundles the forms + container-queries
+# plugins so kidsboard doesn't need Node or an npm install during build.
+ARG TAILWIND_VERSION=v3.4.17
 
 # --- Build stage --------------------------------------------------------------
 # `--platform=$BUILDPLATFORM` pins this stage to the host architecture. The Go
@@ -38,6 +41,33 @@ ARG VERSION=dev
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
+ARG TAILWIND_VERSION
+
+# Build the Tailwind stylesheet BEFORE `go build` so it gets embedded into the
+# binary via `//go:embed static` in internal/view/static.go. The output CSS is
+# plain text and arch-independent, so we always download the BUILDPLATFORM
+# variant (this stage runs on the host's arch, not the target's).
+#
+# alpine ships musl libc, but the standalone Tailwind binary is statically
+# linked — the plain `linux-x64` / `linux-arm64` asset works on alpine.
+RUN --mount=type=cache,target=/var/cache/tailwind \
+    apk add --no-cache curl ca-certificates && \
+    BUILD_ARCH=$(uname -m); \
+    case "$BUILD_ARCH" in \
+      x86_64|amd64)  TW_ARCH=x64 ;; \
+      aarch64|arm64) TW_ARCH=arm64 ;; \
+      *) echo "unsupported build arch: $BUILD_ARCH" >&2; exit 1 ;; \
+    esac; \
+    TW_URL="https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-${TW_ARCH}"; \
+    TW_CACHE="/var/cache/tailwind/tailwindcss-${TAILWIND_VERSION}-linux-${TW_ARCH}"; \
+    if [ ! -x "$TW_CACHE" ]; then \
+      echo "downloading $TW_URL"; \
+      curl -fsSL -o "$TW_CACHE" "$TW_URL"; \
+      chmod +x "$TW_CACHE"; \
+    fi; \
+    mkdir -p internal/view/static/css; \
+    "$TW_CACHE" -i input.css -o internal/view/static/css/kidsboard.css --minify; \
+    wc -c internal/view/static/css/kidsboard.css
 
 # GOARM is set from the platform variant (linux/arm/v7 → "v7" → "7").
 # Empty for non-ARM (amd64, arm64) — Go ignores GOARM unless GOARCH=arm.
