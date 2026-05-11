@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+
+# Vim
+*.orig
+*.swp
+
+# Go build artifacts
+/kidsboard
+/kidsboard.exe
+
+# SQLite runtime files
+*.db
+*.db-wal
+*.db-shm
+
+assets/*
