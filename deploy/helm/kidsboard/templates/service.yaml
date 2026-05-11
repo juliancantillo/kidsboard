@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kidsboard.fullname" . }}
+  labels:
+    {{- include "kidsboard.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "kidsboard.selectorLabels" . | nindent 4 }}
+---
+# Headless service: required by StatefulSet to give the Pod a stable DNS name
+# (<pod-name>.<headless-service>). Not user-facing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kidsboard.fullname" . }}-headless
+  labels:
+    {{- include "kidsboard.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "kidsboard.selectorLabels" . | nindent 4 }}

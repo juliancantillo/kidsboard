@@ -210,6 +210,43 @@ func (q *Queries) ListAchievements(ctx context.Context) ([]Achievement, error) {
 	return items, nil
 }
 
+const listAllAchievements = `-- name: ListAllAchievements :many
+SELECT id, slug, name, description, title, combinator, bonus_points, archived_at, created_at FROM achievements ORDER BY archived_at IS NOT NULL, name
+`
+
+func (q *Queries) ListAllAchievements(ctx context.Context) ([]Achievement, error) {
+	rows, err := q.db.QueryContext(ctx, listAllAchievements)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Achievement{}
+	for rows.Next() {
+		var i Achievement
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.Description,
+			&i.Title,
+			&i.Combinator,
+			&i.BonusPoints,
+			&i.ArchivedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEarnedAchievementsForKid = `-- name: ListEarnedAchievementsForKid :many
 SELECT
     ka.kid_id, ka.achievement_id, ka.earned_at, ka.unseen,

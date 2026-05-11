@@ -1,0 +1,26 @@
+.git
+.github
+.scratch
+.claude
+.idea
+.vscode
+*.md
+LICENSE
+
+# Build artifacts
+/kidsboard
+/kidsboard.exe
+*.db
+*.db-wal
+*.db-shm
+
+# Large unused assets (only the curated subsets under internal/view/static/ ship)
+/assets
+
+# Helm chart isn't needed inside the image
+/deploy
+
+# Local-only files
+.DS_Store
+*.swp
+*.orig

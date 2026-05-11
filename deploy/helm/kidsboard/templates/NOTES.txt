@@ -1,0 +1,37 @@
+Kidsboard {{ .Chart.AppVersion }} is being installed as release "{{ .Release.Name }}".
+
+  Image:        {{ include "kidsboard.image" . }}
+  Namespace:    {{ .Release.Namespace }}
+  Storage:      {{ .Values.persistence.size }}
+                {{- if .Values.persistence.storageClass }} (StorageClass: {{ .Values.persistence.storageClass }}){{- else }} (default StorageClass){{- end }}
+  Database:     {{ .Values.app.dbPath }}
+  Replicas:     1 (locked — SQLite is single-writer)
+
+— Schema migrations run on every rollout via the `migrate` init container.
+— The PersistentVolumeClaim survives upgrades; the SQLite file is preserved.
+— Don't scale this StatefulSet beyond 1 replica.
+
+Reach the app from inside the cluster at:
+
+  http://{{ include "kidsboard.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+{{- if .Values.ingress.enabled }}
+
+External hosts:
+{{- range .Values.ingress.hosts }}
+  - http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+
+Forward a local port:
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "kidsboard.fullname" . }} 8080:{{ .Values.service.port }}
+
+Then open http://localhost:8080
+{{- end }}
+
+To seed initial categories/activity types/achievements:
+
+  kubectl --namespace {{ .Release.Namespace }} exec -it {{ include "kidsboard.fullname" . }}-0 -- /usr/local/bin/kidsboard seed --db {{ .Values.app.dbPath }}
+
+(Or set `app.seedOnDeploy: true` in values.yaml to run seed automatically on every deploy.)

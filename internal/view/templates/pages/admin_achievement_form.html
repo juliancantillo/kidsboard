@@ -1,0 +1,120 @@
+{{ define "title" }}{{ with .Data }}{{ if .IsEdit }}Editar{{ else }}Nuevo{{ end }} logro{{ end }} · Kidsboard{{ end }}
+{{ define "bg-name" }}cliffs{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+{{ $view := . }}
+{{ template "admin_nav" "achievements" }}
+
+<header class="mb-6 reveal reveal-d1">
+  <p class="font-label text-xs uppercase tracking-[0.3em] text-outline mb-1">Modo Padres · Logros</p>
+  <h2 class="font-display font-black uppercase tracking-tight text-3xl md:text-4xl">
+    {{ if .IsEdit }}Editar logro{{ else }}Forjar nuevo logro{{ end }}
+  </h2>
+</header>
+
+<form action="{{ if .IsEdit }}/admin/achievements/{{ .Achievement.ID }}{{ else }}/admin/achievements{{ end }}" method="POST"
+      class="bg-surface-low border-4 border-ink shadow-pixel-lg p-6 reveal reveal-d2 space-y-6">
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Slug</span>
+      <input type="text" name="slug" value="{{ .Form.Slug }}" required maxlength="60"
+             pattern="[a-z0-9\-]+" placeholder="ej. quehaceres-veterano"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body lowercase {{ if .IsEdit }}bg-surface-mid{{ end }}"
+             {{ if .IsEdit }}readonly{{ end }} />
+      {{ with index .Errors "slug" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Nombre</span>
+      <input type="text" name="name" value="{{ .Form.Name }}" required maxlength="100"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+      {{ with index .Errors "name" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+  </div>
+
+  <label class="block">
+    <span class="font-label text-xs uppercase tracking-widest text-outline">Descripción</span>
+    <textarea name="description" rows="2" maxlength="500"
+              class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">{{ .Form.Description }}</textarea>
+  </label>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <label class="block md:col-span-2">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Título (sobrenombre del personaje)</span>
+      <input type="text" name="title" value="{{ .Form.Title }}" maxlength="100"
+             placeholder="ej. Aprendiz de la Espuma"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+    </label>
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Bonus de puntos</span>
+      <input type="number" name="bonus_points" value="{{ .Form.BonusPoints }}" min="0" step="1"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+    </label>
+  </div>
+
+  <fieldset class="block">
+    <legend class="font-label text-xs uppercase tracking-widest text-outline mb-2">Combinador</legend>
+    <div class="flex gap-3">
+      <label class="cursor-pointer flex-1">
+        <input type="radio" name="combinator" value="ALL" class="peer sr-only" {{ if or (eq .Form.Combinator "ALL") (eq .Form.Combinator "") }}checked{{ end }} />
+        <div class="border-4 border-ink bg-surface p-3 peer-checked:bg-ember peer-checked:text-parchment peer-checked:shadow-pixel transition-all">
+          <p class="font-display font-black text-base uppercase">Todas (AND)</p>
+          <p class="font-label text-[10px] uppercase tracking-widest opacity-80">Se deben cumplir TODAS las reglas.</p>
+        </div>
+      </label>
+      <label class="cursor-pointer flex-1">
+        <input type="radio" name="combinator" value="ANY" class="peer sr-only" {{ if eq .Form.Combinator "ANY" }}checked{{ end }} />
+        <div class="border-4 border-ink bg-surface p-3 peer-checked:bg-ember peer-checked:text-parchment peer-checked:shadow-pixel transition-all">
+          <p class="font-display font-black text-base uppercase">Cualquiera (OR)</p>
+          <p class="font-label text-[10px] uppercase tracking-widest opacity-80">Basta con que UNA regla pase.</p>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+
+  <section>
+    <div class="flex items-baseline justify-between mb-2">
+      <legend class="font-label text-xs uppercase tracking-widest text-outline">Reglas</legend>
+      <p class="font-label text-[10px] uppercase tracking-widest text-outline">Deja vacías las filas que no uses</p>
+    </div>
+    {{ with index .Errors "rules" }}<p class="mb-2 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+
+    <div class="space-y-2">
+      {{ range $i, $rule := .Form.Rules }}
+      <div class="grid grid-cols-12 gap-2 items-center bg-surface border-4 border-ink p-2">
+        <span class="col-span-1 text-center font-display font-black text-outline">{{ add $i 1 }}</span>
+        <select name="rule_category_slug" class="col-span-4 border-2 border-ink bg-surface p-1.5 font-body text-sm">
+          <option value="" {{ if eq $rule.CategorySlug "" }}selected{{ end }}>— Global —</option>
+          {{ range $view.Categories }}
+          <option value="{{ .Slug }}" {{ if eq $rule.CategorySlug .Slug }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+        <select name="rule_metric" class="col-span-3 border-2 border-ink bg-surface p-1.5 font-body text-sm">
+          <option value=""       {{ if eq $rule.Metric ""       }}selected{{ end }}>—</option>
+          <option value="count"  {{ if eq $rule.Metric "count"  }}selected{{ end }}>count</option>
+          <option value="xp"     {{ if eq $rule.Metric "xp"     }}selected{{ end }}>xp</option>
+          <option value="points" {{ if eq $rule.Metric "points" }}selected{{ end }}>points</option>
+          <option value="level"  {{ if eq $rule.Metric "level"  }}selected{{ end }}>level</option>
+        </select>
+        <input type="number" name="rule_threshold" min="0" step="1"
+               value="{{ if gt $rule.Threshold 0 }}{{ $rule.Threshold }}{{ end }}"
+               placeholder="umbral"
+               class="col-span-3 border-2 border-ink bg-surface p-1.5 font-body text-sm" />
+        <span class="col-span-1 font-label text-[10px] text-outline uppercase text-right">≥</span>
+      </div>
+      {{ end }}
+    </div>
+  </section>
+
+  <div class="flex items-center justify-between border-t-4 border-ink pt-4">
+    <a href="/admin/achievements" class="font-label text-sm uppercase tracking-widest text-outline hover:text-ink">← Cancelar</a>
+    <button class="btn-pixel bg-moss text-parchment">
+      <span class="material-symbols-outlined mr-2" style="font-size:20px">save</span>
+      {{ if .IsEdit }}Guardar cambios{{ else }}Forjar logro{{ end }}
+    </button>
+  </div>
+</form>
+{{ end }}
+{{ end }}

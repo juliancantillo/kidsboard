@@ -47,6 +47,22 @@ func applyPragmas(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+// Close shuts the DB down cleanly. Checkpoints the WAL (truncates the
+// -wal sidecar into the main file) so backups and post-mortem inspection
+// only need the .db file. Safe to call even if the checkpoint fails —
+// the underlying Close still runs.
+func Close(db *sql.DB) error {
+	if db == nil {
+		return nil
+	}
+	if _, err := db.Exec("PRAGMA wal_checkpoint(TRUNCATE);"); err != nil {
+		// Best-effort: log via the returned error chain but still close.
+		_ = db.Close()
+		return fmt.Errorf("wal checkpoint: %w", err)
+	}
+	return db.Close()
+}
+
 func runMigrations(db *sql.DB) error {
 	goose.SetBaseFS(migrationFS)
 	if err := goose.SetDialect("sqlite3"); err != nil {

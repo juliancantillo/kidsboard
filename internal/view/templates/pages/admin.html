@@ -1,0 +1,106 @@
+{{ define "title" }}Panel de Padres · Kidsboard{{ end }}
+{{ define "bg-name" }}mountains{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+{{ template "admin_nav" "kids" }}
+<header class="mb-8 reveal reveal-d1">
+  <p class="font-label text-xs uppercase tracking-[0.3em] text-outline mb-1">Modo Padres</p>
+  <h2 class="font-display font-black uppercase tracking-tight text-3xl md:text-4xl">Panel de Control</h2>
+  <p class="font-body text-ink-soft mt-1">Crea personajes, registra actividades y ajusta puntos.</p>
+</header>
+
+<section class="mb-10 reveal reveal-d1">
+  <div class="flex items-end justify-between mb-3">
+    <h3 class="font-display font-black uppercase tracking-tight text-xl">Personajes</h3>
+    <a href="/admin/kids/new" class="btn-pixel bg-moss text-parchment text-sm">
+      <span class="material-symbols-outlined mr-2" style="font-size:18px">person_add</span>
+      Crear personaje
+    </a>
+  </div>
+  {{ if .Kids }}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {{ range .Kids }}
+    <div class="bg-surface-low border-4 border-ink shadow-pixel p-4 flex items-center gap-4">
+      <div class="w-16 h-16 border-4 border-ink shadow-pixel-sm" style="background: {{ .Color }};">
+        <img class="pixel w-full h-full object-cover" src="{{ avatarSrc .AvatarSlug }}" alt="{{ .Name }}" />
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-display font-black text-lg uppercase truncate">{{ .Name }}</p>
+        <p class="font-label text-xs uppercase tracking-widest text-outline">{{ .Color }}</p>
+      </div>
+      <form action="/admin/kids/{{ .ID }}/archive" method="POST">
+        <button class="border-2 border-ink p-1.5 bg-blood-soft hover:bg-blood hover:text-parchment transition-colors" title="Archivar">
+          <span class="material-symbols-outlined" style="font-size:18px">archive</span>
+        </button>
+      </form>
+    </div>
+    {{ end }}
+  </div>
+  {{ else }}
+  <div class="bg-surface-low border-4 border-ink shadow-pixel p-6 text-center text-ink-soft">
+    Aún no hay personajes. <a href="/admin/kids/new" class="underline font-bold">Crea el primero</a>.
+  </div>
+  {{ end }}
+</section>
+
+<section class="reveal reveal-d2">
+  <h3 class="font-display font-black uppercase tracking-tight text-xl mb-3">Registrar actividad</h3>
+  {{ if and .Kids .ActivityTypes }}
+  <form action="/admin/activities" method="POST" class="bg-surface-low border-4 border-ink shadow-pixel-lg p-5 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="block">
+        <span class="font-label text-xs uppercase tracking-widest text-outline">Personaje</span>
+        <select name="kid_id" required class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">
+          {{ range .Kids }}
+          <option value="{{ .ID }}">{{ .Name }}</option>
+          {{ end }}
+        </select>
+      </label>
+      <label class="block">
+        <span class="font-label text-xs uppercase tracking-widest text-outline">Actividad</span>
+        <select name="activity_type_id" required class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">
+          {{ range .ActivityTypes }}
+          <option value="{{ .ID }}">{{ .Name }} · +{{ .XPPerUnit }} XP · +{{ .PointsPerUnit }} pt</option>
+          {{ end }}
+        </select>
+      </label>
+      <label class="block">
+        <span class="font-label text-xs uppercase tracking-widest text-outline">Cantidad</span>
+        <input type="number" name="quantity" value="1" min="1" class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+      </label>
+    </div>
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Nota (opcional)</span>
+      <input type="text" name="note" maxlength="200" placeholder="Detalle para la posteridad…" class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+    </label>
+    <div class="flex justify-end">
+      <button class="btn-pixel bg-ember text-parchment">
+        <span class="material-symbols-outlined mr-2" style="font-size:20px">add_task</span>
+        Registrar
+      </button>
+    </div>
+  </form>
+  {{ else }}
+  <div class="bg-surface-low border-4 border-ink shadow-pixel p-6 text-center text-ink-soft">
+    Para registrar actividades necesitas al menos un personaje y un tipo de actividad.
+    {{ if not .ActivityTypes }}Ejecuta <code class="font-label px-1 bg-surface-mid border border-outline-soft">make seed</code> para crear los tipos iniciales.{{ end }}
+  </div>
+  {{ end }}
+</section>
+
+<section class="mt-10 reveal reveal-d3">
+  <h3 class="font-display font-black uppercase tracking-tight text-xl mb-3">Categorías</h3>
+  <div class="flex flex-wrap gap-2">
+    {{ range .Categories }}
+    <span class="inline-flex items-center gap-2 border-4 border-ink bg-surface-mid px-3 py-1.5 font-label text-xs uppercase tracking-widest shadow-pixel-sm">
+      {{ if .Icon }}<img src="{{ iconSrc (deref .Icon) }}" class="pixel w-5 h-5" alt="" />{{ end }}
+      {{ .Name }}
+    </span>
+    {{ else }}
+    <p class="text-ink-soft">No hay categorías. Ejecuta <code class="font-label px-1 bg-surface-mid border border-outline-soft">make seed</code>.</p>
+    {{ end }}
+  </div>
+</section>
+{{ end }}
+{{ end }}

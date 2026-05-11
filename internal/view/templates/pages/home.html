@@ -1,0 +1,46 @@
+{{ define "title" }}Personajes · Kidsboard{{ end }}
+{{ define "bg-name" }}meadow{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+<section class="border-4 border-ink shadow-pixel-lg wood-bg mb-10 px-6 py-10 md:py-14 reveal">
+  <div class="text-parchment max-w-3xl mx-auto text-center">
+    <p class="font-label text-xs uppercase tracking-[0.3em] text-surface-edge mb-2">Comienza tu aventura</p>
+    <h2 class="font-display font-black uppercase tracking-tight text-4xl md:text-6xl drop-shadow-[3px_3px_0_rgba(0,0,0,0.8)]">Elige tu personaje</h2>
+    <p class="mt-3 font-body text-base md:text-lg">Cada quehacer es una misión. Cada misión otorga experiencia. Cada nivel desbloquea nuevas hazañas.</p>
+  </div>
+</section>
+
+{{ if .Kids }}
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {{ range $i, $kid := .Kids }}
+  <a href="/kids/{{ $kid.ID }}"
+     class="group reveal reveal-d{{ add $i 1 }} block border-4 border-ink wood-bg shadow-pixel-lg hover:-translate-y-1 hover:shadow-pixel-xl transition-all"
+     style="--accent: {{ $kid.Color }};">
+    <div class="border-b-4 border-ink p-5 bg-surface-mid flex justify-center">
+      <div class="w-32 h-32 border-4 border-ink shadow-pixel-sm overflow-hidden" style="background: {{ $kid.Color }};">
+        <img class="pixel w-full h-full object-cover" src="{{ avatarSrc $kid.AvatarSlug }}" alt="{{ $kid.Name }}" />
+      </div>
+    </div>
+    <div class="p-4 text-parchment text-center space-y-1">
+      <h3 class="font-display font-black text-2xl uppercase tracking-tight">{{ $kid.Name }}</h3>
+      <p class="font-label text-xs uppercase tracking-widest text-surface-edge">Toca para jugar</p>
+    </div>
+    <div class="px-4 pb-4">
+      <div class="bar-shell border-2 border-ink">
+        <div class="bar-fill bar-sm" style="background: {{ $kid.Color }}; width: 100%;"></div>
+      </div>
+    </div>
+  </a>
+  {{ end }}
+</section>
+
+{{ else }}
+<section class="border-4 border-ink bg-surface-low shadow-pixel-lg p-10 text-center parchment-grain reveal">
+  <span class="material-symbols-outlined text-ink" style="font-size:64px">castle</span>
+  <h2 class="font-display font-black uppercase tracking-tight text-3xl mt-3 mb-2">Tu reino está vacío</h2>
+  <p class="font-body text-ink-soft max-w-md mx-auto">Aún no hay personajes. Pídele a tus padres que forjen al primer héroe del hogar.</p>
+</section>
+{{ end }}
+{{ end }}
+{{ end }}

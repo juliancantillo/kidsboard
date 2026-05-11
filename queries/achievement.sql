@@ -7,6 +7,9 @@ SELECT * FROM achievements WHERE slug = ? AND archived_at IS NULL;
 -- name: ListAchievements :many
 SELECT * FROM achievements WHERE archived_at IS NULL ORDER BY name;
 
+-- name: ListAllAchievements :many
+SELECT * FROM achievements ORDER BY archived_at IS NOT NULL, name;
+
 -- name: UpsertAchievementBySlug :one
 INSERT INTO achievements (slug, name, description, title, combinator, bonus_points)
 VALUES (?, ?, ?, ?, ?, ?)

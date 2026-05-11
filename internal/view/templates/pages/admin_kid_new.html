@@ -1,0 +1,58 @@
+{{ define "title" }}Crear personaje · Kidsboard{{ end }}
+{{ define "bg-name" }}cliffs{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+{{ template "admin_nav" "kids" }}
+<header class="mb-6 reveal reveal-d1">
+  <p class="font-label text-xs uppercase tracking-[0.3em] text-outline mb-1">Modo Padres · Nuevo</p>
+  <h2 class="font-display font-black uppercase tracking-tight text-3xl md:text-4xl">Forjar Héroe</h2>
+</header>
+
+<form action="/admin/kids" method="POST" class="bg-surface-low border-4 border-ink shadow-pixel-lg p-6 reveal reveal-d1">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Nombre</span>
+      <input type="text" name="name" value="{{ .Form.Name }}" required maxlength="50"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body text-lg" />
+      {{ with index .Errors "name" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Color de aura</span>
+      <div class="flex gap-3 mt-1 items-center">
+        <input type="color" name="color" value="{{ if .Form.Color }}{{ .Form.Color }}{{ else }}#6366F1{{ end }}"
+               class="w-16 h-12 border-4 border-ink p-0" />
+        <span class="font-label text-sm text-outline">Define el aura del personaje en su perfil.</span>
+      </div>
+      {{ with index .Errors "color" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+  </div>
+
+  <div class="mt-6">
+    <p class="font-label text-xs uppercase tracking-widest text-outline mb-2">Elige un avatar</p>
+    <div class="grid grid-cols-4 sm:grid-cols-7 gap-3">
+      {{ range .Avatars }}
+      <label class="cursor-pointer">
+        <input type="radio" name="avatar_slug" value="{{ .Slug }}" class="peer sr-only"
+               {{ if eq $.Data.Form.AvatarSlug .Slug }}checked{{ end }} />
+        <div class="border-4 border-ink bg-surface-mid p-1 peer-checked:bg-ember peer-checked:shadow-pixel transition-all">
+          <img src="{{ avatarSrc .Slug }}" alt="{{ .Name }}" class="pixel w-full aspect-square object-cover" />
+        </div>
+        <p class="mt-1 text-center font-label text-[10px] uppercase tracking-wider text-outline truncate">{{ .Name }}</p>
+      </label>
+      {{ end }}
+    </div>
+    {{ with index .Errors "avatar_slug" }}<p class="mt-2 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+  </div>
+
+  <div class="mt-6 flex items-center justify-between">
+    <a href="/admin" class="font-label text-sm uppercase tracking-widest text-outline hover:text-ink">← Volver</a>
+    <button class="btn-pixel bg-moss text-parchment">
+      <span class="material-symbols-outlined mr-2" style="font-size:20px">auto_awesome</span>
+      Forjar
+    </button>
+  </div>
+</form>
+{{ end }}
+{{ end }}

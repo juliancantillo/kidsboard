@@ -1,4 +1,4 @@
-.PHONY: check test build generate run seed clean
+.PHONY: check test build generate run seed clean docker helm-lint helm-template
 
 # Default target: run tests, then build. Used as the single CI/local
 # verification step — anything green here is shippable.
@@ -26,3 +26,15 @@ seed:
 
 clean:
 	rm -f kidsboard kidsboard.db kidsboard.db-shm kidsboard.db-wal
+
+# Build the container image. Pass VERSION=x.y.z to stamp the binary.
+docker:
+	docker build --build-arg VERSION=$${VERSION:-dev} -t kidsboard:$${VERSION:-dev} .
+
+# Lint the Helm chart for syntax + best-practice issues.
+helm-lint:
+	helm lint deploy/helm/kidsboard
+
+# Render the chart to stdout. Useful for sanity-checking value overrides.
+helm-template:
+	helm template kidsboard deploy/helm/kidsboard

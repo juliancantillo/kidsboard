@@ -1,0 +1,145 @@
+# Default values for kidsboard.
+# Override with `helm install -f my-values.yaml` or `--set` flags.
+
+# -- Container image. tag defaults to .Chart.AppVersion when empty.
+image:
+  repository: kidsboard
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# -- Name overrides. By default the chart name is used.
+nameOverride: ""
+fullnameOverride: ""
+
+# Application configuration. These map to `kidsboard serve` flags.
+app:
+  # Address the HTTP server binds to inside the container.
+  addr: ":8080"
+  # SQLite database file path. Lives on the persistent volume.
+  dbPath: /data/kidsboard.db
+  # Graceful drain budget on shutdown signal.
+  shutdownTimeout: 30s
+  readTimeout: 30s
+  idleTimeout: 60s
+  # When true, also runs `kidsboard seed` in the init container after migrate.
+  # Safe to keep on: seeds are upsert-by-slug and idempotent.
+  seedOnDeploy: false
+
+# StatefulSet sizing. SQLite is single-writer; replicas is hard-locked to 1
+# in the manifest — this knob is here for documentation only and is ignored.
+replicaCount: 1
+
+# Persistent storage for the SQLite file. The volume survives Pod restarts
+# and chart upgrades; only `helm uninstall --no-hooks` will leave the PVC
+# behind, but its deletion is up to the user / their reclaim policy.
+persistence:
+  enabled: true
+  size: 1Gi
+  # Use the cluster's default StorageClass when empty.
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+# Resource budget. Kidsboard is tiny; these limits suit a family-sized roster.
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Probes. The migrate init container is the gate for "ready"; once the main
+# container starts, /readyz becomes the source of truth.
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startup:
+    path: /healthz
+    initialDelaySeconds: 1
+    periodSeconds: 2
+    timeoutSeconds: 2
+    failureThreshold: 30
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # nginx.ingress.kubernetes.io/proxy-body-size: 1m
+  hosts:
+    - host: kidsboard.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: kidsboard-tls
+    #   hosts: [kidsboard.example.com]
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # Disable automatic mounting of the SA token — kidsboard has no need to call
+  # the kube-apiserver. Reduces blast radius if the Pod is ever compromised.
+  automountServiceAccountToken: false
+
+# Pod-level security context (applies to all containers).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context (applies to each container).
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+# Should be ≥ app.shutdownTimeout so the graceful drain has time to complete
+# before the kubelet SIGKILLs.
+terminationGracePeriodSeconds: 35
+
+# Update strategy. RollingUpdate is safe at replicas=1 — the StatefulSet
+# controller fully tears down the old Pod (releasing the RWO PVC) before
+# scheduling the new one, so there's never a second writer.
+updateStrategy:
+  type: RollingUpdate
+
+# Anti-affinity / placement.
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Extra pod-level metadata.
+podAnnotations: {}
+podLabels: {}
+
+# Useful for setting timezone, log level, etc. — appended verbatim to the
+# main container's env block.
+extraEnv: []
+  # - name: TZ
+  #   value: America/Bogota

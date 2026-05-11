@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kidsboard.fullname" . }}
+  labels:
+    {{- include "kidsboard.labels" . | nindent 4 }}
+# Kidsboard configuration is passed via CLI flags rather than environment
+# variables, so this ConfigMap is mostly here to make `kubectl describe` /
+# `kubectl get cm` show what the running pod was told. The StatefulSet
+# annotation `checksum/config` references this; bumping these values triggers
+# a rolling Pod restart.
+data:
+  addr: {{ .Values.app.addr | quote }}
+  dbPath: {{ .Values.app.dbPath | quote }}
+  shutdownTimeout: {{ .Values.app.shutdownTimeout | quote }}
+  readTimeout: {{ .Values.app.readTimeout | quote }}
+  idleTimeout: {{ .Values.app.idleTimeout | quote }}
+  seedOnDeploy: {{ .Values.app.seedOnDeploy | quote }}

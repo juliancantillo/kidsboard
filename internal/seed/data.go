@@ -39,13 +39,14 @@ type AchievementSeed struct {
 }
 
 // Categories — broad household areas. Curated for an RPG-style household.
+// Icons reference slugs under view/static/icons/<slug>.png.
 var Categories = []CategorySeed{
-	{Slug: "quehaceres", Name: "Quehaceres", Description: "Tareas del hogar y responsabilidades.", Icon: "🧹", Color: "#10B981"},
-	{Slug: "escuela", Name: "Escuela", Description: "Tareas escolares y aprendizaje.", Icon: "📚", Color: "#3B82F6"},
-	{Slug: "higiene", Name: "Higiene", Description: "Cuidado personal y aseo.", Icon: "🧼", Color: "#06B6D4"},
-	{Slug: "lectura", Name: "Lectura", Description: "Hábitos de lectura y exploración de historias.", Icon: "📖", Color: "#8B5CF6"},
-	{Slug: "deporte", Name: "Deporte", Description: "Actividad física y deportes.", Icon: "⚽", Color: "#F97316"},
-	{Slug: "arte", Name: "Arte y Música", Description: "Creatividad, música y expresión artística.", Icon: "🎨", Color: "#EC4899"},
+	{Slug: "quehaceres", Name: "Quehaceres", Description: "Tareas del hogar y responsabilidades.", Icon: "tools", Color: "#10B981"},
+	{Slug: "escuela", Name: "Escuela", Description: "Tareas escolares y aprendizaje.", Icon: "tome", Color: "#3B82F6"},
+	{Slug: "higiene", Name: "Higiene", Description: "Cuidado personal y aseo.", Icon: "rose", Color: "#06B6D4"},
+	{Slug: "lectura", Name: "Lectura", Description: "Hábitos de lectura y exploración de historias.", Icon: "scroll", Color: "#8B5CF6"},
+	{Slug: "deporte", Name: "Deporte", Description: "Actividad física y deportes.", Icon: "bow", Color: "#F97316"},
+	{Slug: "arte", Name: "Arte y Música", Description: "Creatividad, música y expresión artística.", Icon: "trumpet", Color: "#EC4899"},
 }
 
 // ActivityTypes — what kids actually do. XP rewards effort; points reward
