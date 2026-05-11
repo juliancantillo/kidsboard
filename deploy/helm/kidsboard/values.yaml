@@ -2,8 +2,10 @@
 # Override with `helm install -f my-values.yaml` or `--set` flags.
 
 # -- Container image. tag defaults to .Chart.AppVersion when empty.
+# Default points at the GHCR repo populated by the Release workflow. Override
+# for forks/private builds: `--set image.repository=registry.local/kidsboard`.
 image:
-  repository: kidsboard
+  repository: ghcr.io/juliancantillo/kidsboard
   tag: ""
   pullPolicy: IfNotPresent
 

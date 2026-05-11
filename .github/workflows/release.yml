@@ -1,0 +1,207 @@
+name: Release
+
+# Triggers on:
+#   • Pushing a SemVer tag (`v0.1.0`, `v1.2.3-rc1`) — the canonical release path
+#   • Manual dispatch from the Actions UI with an explicit version — for re-cuts
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (without v prefix, e.g. 0.1.0)'
+        required: true
+        type: string
+
+# Cancel duplicate runs for the same tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false  # never cancel a partial release — could leave registry in odd state
+
+permissions:
+  contents: write       # create GH Release + attach assets
+  packages: write       # push image to ghcr.io
+  id-token: write       # OIDC for build attestations (provenance / SBOM)
+  attestations: write   # write provenance to GH attestations API
+
+env:
+  REGISTRY: ghcr.io
+  # `github.repository` is `<owner>/<repo>`; lowercased automatically by metadata-action.
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Gate: re-run tests on the exact tag SHA. Prevents shipping a broken release
+  # if main moved between PR merge and tag.
+  # ----------------------------------------------------------------------------
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test -race -count=1 ./...
+      - run: go build ./...
+      - uses: azure/setup-helm@v4
+        with:
+          version: latest
+      - run: helm lint deploy/helm/kidsboard
+
+  # ----------------------------------------------------------------------------
+  # Build & push the multi-arch container image to GHCR. Emits:
+  #   • SemVer tags: 0.1.0, 0.1, latest
+  #   • SHA tag for forensic lookup
+  #   • SLSA build provenance + SBOM (via build-push-action native support)
+  # ----------------------------------------------------------------------------
+  image:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    needs: verify
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      digest:  ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Resolve the version once and reuse downstream. Tag pushes use ref_name
+      # without the leading 'v'; manual dispatch uses the input verbatim.
+      - id: version
+        name: Resolve version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            # Strip the leading "v" from refs/tags/vX.Y.Z
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Generate image tags + OCI labels. `latest` only applies for proper
+      # SemVer tags (so `v0.1.0-rc1` doesn't claim latest).
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
+          labels: |
+            org.opencontainers.image.title=kidsboard
+            org.opencontainers.image.description=RPG-style household activity tracker for kids
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+
+      - id: build
+        name: Build & push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # SLSA provenance + SBOM attached to the manifest. Consumed by
+          # `cosign verify-attestation` and GH's attestation explorer.
+          provenance: mode=max
+          sbom: true
+
+      # Attach the built image to the repo's attestation log so `gh attestation
+      # verify oci://...` works out of the box.
+      - name: Generate build attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  # ----------------------------------------------------------------------------
+  # Package the Helm chart, stamp version, attach to the GH Release.
+  # Chart version + appVersion are pinned to the release version so consumers
+  # who pull the chart get a fixed image tag by default.
+  # ----------------------------------------------------------------------------
+  release:
+    name: Helm package & GitHub Release
+    runs-on: ubuntu-latest
+    needs: image
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: latest
+
+      - name: Stamp chart version
+        env:
+          VERSION: ${{ needs.image.outputs.version }}
+        run: |
+          # Pin the chart's version + appVersion to the release. The chart's
+          # default image.tag falls back to .Chart.AppVersion so consumers
+          # get a coherent default without extra --set flags.
+          sed -i "s/^version:.*/version: ${VERSION}/" deploy/helm/kidsboard/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${VERSION}\"/" deploy/helm/kidsboard/Chart.yaml
+          grep -E '^(version|appVersion):' deploy/helm/kidsboard/Chart.yaml
+
+      - name: Package chart
+        run: |
+          mkdir -p dist
+          helm package deploy/helm/kidsboard --destination dist
+          ls -la dist
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Use the pushed tag for tag-triggered runs; synthesize one for
+          # manual dispatch.
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
+          name: kidsboard ${{ needs.image.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/kidsboard-*.tgz
+          body: |
+            ## Container image
+
+            Pull from GHCR (multi-arch: amd64 + arm64, Pi-ready):
+
+            ```
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.image.outputs.version }}
+            ```
+
+            **Digest**: `${{ needs.image.outputs.digest }}`
+
+            ## Helm chart
+
+            The `kidsboard-${{ needs.image.outputs.version }}.tgz` asset attached below is a stamped chart pointing at the image above by default.
+
+            ```
+            helm install kidsboard \
+              https://github.com/${{ github.repository }}/releases/download/${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}/kidsboard-${{ needs.image.outputs.version }}.tgz
+            ```
+
+            ## Supply chain
+
+            - SLSA build provenance + SBOM are attached to the image manifest
+            - Verify with: `gh attestation verify oci://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.image.outputs.version }} --repo ${{ github.repository }}`
