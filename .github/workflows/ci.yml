@@ -17,16 +17,22 @@ concurrency:
 permissions:
   contents: read
 
+# Opt every JavaScript action into Node.js 24. GitHub's runner will force this
+# default in June 2026 anyway; setting it now silences deprecation warnings
+# from actions whose maintainers haven't yet bumped their action.yml's `using:`.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   test:
     name: Test & lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           # Read the version from go.mod so CI tracks the project, not vice versa.
           go-version-file: go.mod
@@ -67,7 +73,7 @@ jobs:
     needs: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

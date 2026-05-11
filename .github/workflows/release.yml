@@ -29,6 +29,10 @@ env:
   REGISTRY: ghcr.io
   # `github.repository` is `<owner>/<repo>`; lowercased automatically by metadata-action.
   IMAGE_NAME: ${{ github.repository }}
+  # Opt every JavaScript action into Node.js 24. GH's runner will force this
+  # default in June 2026 anyway; setting it now silences deprecation warnings
+  # from actions whose action.yml still declares `using: node20`.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -39,8 +43,8 @@ jobs:
     name: Verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -65,7 +69,7 @@ jobs:
       version: ${{ steps.version.outputs.value }}
       digest:  ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Resolve the version once and reuse downstream. Tag pushes use ref_name
       # without the leading 'v'; manual dispatch uses the input verbatim.
@@ -147,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: image
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: azure/setup-helm@v4
         with:
