@@ -117,9 +117,9 @@ func optionalString(s string) *string {
 
 // Stats summarizes what's in the database — used by the CLI to confirm seeding.
 type Stats struct {
-	Categories     int
-	ActivityTypes  int
-	Achievements   int
+	Categories       int
+	ActivityTypes    int
+	Achievements     int
 	AchievementRules int
 }
 

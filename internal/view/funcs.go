@@ -10,20 +10,20 @@ import (
 // funcMap registers helpers callable from any template.
 func funcMap() template.FuncMap {
 	return template.FuncMap{
-		"avatarSrc":     avatarSrc,
-		"bgSrc":         bgSrc,
-		"iconSrc":       iconSrc,
-		"upper":         strings.ToUpper,
-		"pct":           pct,
-		"clampPct":      clampPct,
-		"int":           toInt,
-		"fmtInt":        fmtInt,
-		"fmtTime":       fmtTime,
-		"fmtRelative":   fmtRelative,
-		"deref":         deref,
-		"defaultIfNil":  defaultIfNil,
-		"add":           func(a, b int) int { return a + b },
-		"dict":          dict,
+		"avatarSrc":    avatarSrc,
+		"bgSrc":        bgSrc,
+		"iconSrc":      iconSrc,
+		"upper":        strings.ToUpper,
+		"pct":          pct,
+		"clampPct":     clampPct,
+		"int":          toInt,
+		"fmtInt":       fmtInt,
+		"fmtTime":      fmtTime,
+		"fmtRelative":  fmtRelative,
+		"deref":        deref,
+		"defaultIfNil": defaultIfNil,
+		"add":          func(a, b int) int { return a + b },
+		"dict":         dict,
 	}
 }
 

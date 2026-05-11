@@ -70,7 +70,7 @@ func (s *activityService) Log(ctx context.Context, db *sql.DB, in LogActivityInp
 			ActivityTypeID: at.ID,
 			Quantity:       int64(in.Quantity),
 			XpAwarded:      at.XPPerUnit * int64(in.Quantity),
-			PointsAwarded: at.PointsPerUnit * int64(in.Quantity),
+			PointsAwarded:  at.PointsPerUnit * int64(in.Quantity),
 			Note:           notePtr,
 		}
 		if in.OccurredAt != nil {
@@ -92,7 +92,7 @@ func (s *activityService) Log(ctx context.Context, db *sql.DB, in LogActivityInp
 		return LogResult{
 			Activity: domain.Activity{
 				ID: row.ID, KidID: row.KidID, ActivityTypeID: row.ActivityTypeID,
-				Quantity: int(row.Quantity),
+				Quantity:  int(row.Quantity),
 				XPAwarded: row.XpAwarded, PointsAwarded: row.PointsAwarded,
 				Note: row.Note, OccurredAt: row.OccurredAt, CreatedAt: row.CreatedAt,
 				VoidedAt: row.VoidedAt, VoidReason: row.VoidReason,

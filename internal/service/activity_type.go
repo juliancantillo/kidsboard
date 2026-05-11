@@ -61,7 +61,7 @@ func activityTypeFromRow(r sqldb.ActivityType) domain.ActivityType {
 	return domain.ActivityType{
 		ID: r.ID, CategoryID: r.CategoryID, Slug: r.Slug, Name: r.Name,
 		Description: r.Description,
-		XPPerUnit: r.XpPerUnit, PointsPerUnit: r.PointsPerUnit,
+		XPPerUnit:   r.XpPerUnit, PointsPerUnit: r.PointsPerUnit,
 		ArchivedAt: r.ArchivedAt, CreatedAt: r.CreatedAt,
 	}
 }

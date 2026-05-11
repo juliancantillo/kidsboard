@@ -4,12 +4,12 @@ import "time"
 
 // CategoryLevel describes a kid's progression within a single category.
 type CategoryLevel struct {
-	Category       Category
-	XP             int64
-	Level          int
-	XPIntoLevel    int64
-	XPForNext      int64
-	ProgressRatio  float64
+	Category      Category
+	XP            int64
+	Level         int
+	XPIntoLevel   int64
+	XPForNext     int64
+	ProgressRatio float64
 }
 
 // RuleProgress carries the live values for a single rule of an achievement.
@@ -46,11 +46,11 @@ type EarnedAchievement struct {
 
 // ProfileView is the composite read model rendered on a kid's profile page.
 type ProfileView struct {
-	Kid             Kid
-	Balance         Balance
-	CategoryLevels  []CategoryLevel
-	NextAchievements []AchievementProgress
-	RecentEarned    []EarnedAchievement
-	RecentActivity  []Activity
+	Kid                Kid
+	Balance            Balance
+	CategoryLevels     []CategoryLevel
+	NextAchievements   []AchievementProgress
+	RecentEarned       []EarnedAchievement
+	RecentActivity     []Activity
 	PendingRedemptions []Redemption
 }

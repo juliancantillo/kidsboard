@@ -28,7 +28,7 @@ type profileService struct {
 }
 
 const (
-	recentActivityLimit = 10
+	recentActivityLimit  = 10
 	nextAchievementLimit = 3
 )
 
@@ -156,7 +156,7 @@ func (s *profileService) composeEarned(ctx context.Context, q *sqldb.Queries, ki
 			Achievement: domain.Achievement{
 				ID: r.AchievementID, Slug: r.Slug, Name: r.Name,
 				Description: r.Description, Title: r.Title,
-				Combinator: domain.Combinator(r.Combinator),
+				Combinator:  domain.Combinator(r.Combinator),
 				BonusPoints: r.BonusPoints, ArchivedAt: r.ArchivedAt, CreatedAt: r.CreatedAt,
 			},
 			EarnedAt: r.EarnedAt,
