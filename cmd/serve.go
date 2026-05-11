@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os/signal"
 	"syscall"
 	"time"
@@ -13,34 +13,38 @@ import (
 	"cantillo.dev/kidsboard/internal/storage"
 	"cantillo.dev/kidsboard/internal/view"
 	"github.com/spf13/cobra"
-)
-
-var (
-	serveAddr            string
-	serveDBPath          string
-	serveShutdownTimeout time.Duration
-	serveReadTimeout     time.Duration
-	serveIdleTimeout     time.Duration
+	"github.com/spf13/viper"
 )
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the kidsboard HTTP server",
 	Long: `Starts the HTTP server. Handles SIGINT/SIGTERM by draining
-in-flight requests within --shutdown-timeout before closing the database.`,
+in-flight requests within --shutdown-timeout before closing the database.
+
+All flags are also readable via env vars (KIDSBOARD_<FLAG_UPPER>):
+  KIDSBOARD_ADDR              → --addr
+  KIDSBOARD_DB                → --db
+  KIDSBOARD_SHUTDOWN_TIMEOUT  → --shutdown-timeout
+  KIDSBOARD_READ_TIMEOUT      → --read-timeout
+  KIDSBOARD_IDLE_TIMEOUT      → --idle-timeout`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
 
-		db, err := storage.OpenSQLite(ctx, serveDBPath)
+		dbPath := viper.GetString("db")
+		addr := viper.GetString("addr")
+		shutdownTimeout := viper.GetDuration("shutdown-timeout")
+		readTimeout := viper.GetDuration("read-timeout")
+		idleTimeout := viper.GetDuration("idle-timeout")
+
+		db, err := storage.OpenSQLite(ctx, dbPath)
 		if err != nil {
 			return fmt.Errorf("open db: %w", err)
 		}
-		// Close happens AFTER Serve returns — by then srv.Shutdown has finished
-		// and no requests are using the DB, so the WAL checkpoint is safe.
 		defer func() {
 			if err := storage.Close(db); err != nil {
-				log.Printf("db close: %v", err)
+				slog.Error("db close", "err", err)
 			}
 		}()
 
@@ -58,10 +62,10 @@ in-flight requests within --shutdown-timeout before closing the database.`,
 		profile := service.NewProfileService(balance)
 
 		return khttp.Serve(ctx, khttp.Options{
-			Addr:            serveAddr,
-			ShutdownTimeout: serveShutdownTimeout,
-			ReadTimeout:     serveReadTimeout,
-			IdleTimeout:     serveIdleTimeout,
+			Addr:            addr,
+			ShutdownTimeout: shutdownTimeout,
+			ReadTimeout:     readTimeout,
+			IdleTimeout:     idleTimeout,
 		}, khttp.Deps{
 			DB:            db,
 			Renderer:      renderer,
@@ -76,10 +80,17 @@ in-flight requests within --shutdown-timeout before closing the database.`,
 }
 
 func init() {
-	serveCmd.Flags().StringVar(&serveAddr, "addr", ":8080", "Address to listen on")
-	serveCmd.Flags().StringVar(&serveDBPath, "db", "kidsboard.db", "SQLite database file path")
-	serveCmd.Flags().DurationVar(&serveShutdownTimeout, "shutdown-timeout", 30*time.Second, "Max time to drain in-flight requests on shutdown")
-	serveCmd.Flags().DurationVar(&serveReadTimeout, "read-timeout", 30*time.Second, "HTTP read timeout")
-	serveCmd.Flags().DurationVar(&serveIdleTimeout, "idle-timeout", 60*time.Second, "HTTP idle timeout for keep-alive connections")
+	serveCmd.Flags().String("addr", ":8080", "Address to listen on")
+	serveCmd.Flags().String("db", "kidsboard.db", "SQLite database file path")
+	serveCmd.Flags().Duration("shutdown-timeout", 30*time.Second, "Max time to drain in-flight requests on shutdown")
+	serveCmd.Flags().Duration("read-timeout", 30*time.Second, "HTTP read timeout")
+	serveCmd.Flags().Duration("idle-timeout", 60*time.Second, "HTTP idle timeout for keep-alive connections")
+
+	must(viper.BindPFlag("addr", serveCmd.Flags().Lookup("addr")))
+	must(viper.BindPFlag("db", serveCmd.Flags().Lookup("db")))
+	must(viper.BindPFlag("shutdown-timeout", serveCmd.Flags().Lookup("shutdown-timeout")))
+	must(viper.BindPFlag("read-timeout", serveCmd.Flags().Lookup("read-timeout")))
+	must(viper.BindPFlag("idle-timeout", serveCmd.Flags().Lookup("idle-timeout")))
+
 	rootCmd.AddCommand(serveCmd)
 }

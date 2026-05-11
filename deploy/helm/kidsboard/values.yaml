@@ -15,7 +15,8 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-# Application configuration. These map to `kidsboard serve` flags.
+# Application configuration. Each key becomes a KIDSBOARD_<KEY_UPPER> env
+# var in the ConfigMap and is consumed by viper at startup (12-factor §III).
 app:
   # Address the HTTP server binds to inside the container.
   addr: ":8080"
@@ -25,6 +26,10 @@ app:
   shutdownTimeout: 30s
   readTimeout: 30s
   idleTimeout: 60s
+  # Structured logging. format=json for production aggregators (Loki, Datadog);
+  # text is easier on the eyes during local debugging.
+  logLevel: info
+  logFormat: json
   # When true, also runs `kidsboard seed` in the init container after migrate.
   # Safe to keep on: seeds are upsert-by-slug and idempotent.
   seedOnDeploy: false

@@ -91,4 +91,7 @@ USER nonroot:nonroot
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/kidsboard"]
-CMD ["serve", "--addr", ":8080", "--db", "/data/kidsboard.db"]
+# Defaults to `serve`. Per 12-factor, every config knob is also a
+# KIDSBOARD_* env var — override the listen address with KIDSBOARD_ADDR,
+# the DB path with KIDSBOARD_DB, log format with KIDSBOARD_LOG_FORMAT, etc.
+CMD ["serve"]

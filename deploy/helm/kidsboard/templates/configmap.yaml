@@ -4,15 +4,15 @@ metadata:
   name: {{ include "kidsboard.fullname" . }}
   labels:
     {{- include "kidsboard.labels" . | nindent 4 }}
-# Kidsboard configuration is passed via CLI flags rather than environment
-# variables, so this ConfigMap is mostly here to make `kubectl describe` /
-# `kubectl get cm` show what the running pod was told. The StatefulSet
-# annotation `checksum/config` references this; bumping these values triggers
-# a rolling Pod restart.
+# 12-factor §III: config in env. These keys are consumed by `envFrom` in the
+# StatefulSet so the binary reads them through viper at startup. Editing this
+# ConfigMap (via `helm upgrade`) updates the Pod-template `checksum/config`
+# annotation, triggering a rolling restart that picks up new values.
 data:
-  addr: {{ .Values.app.addr | quote }}
-  dbPath: {{ .Values.app.dbPath | quote }}
-  shutdownTimeout: {{ .Values.app.shutdownTimeout | quote }}
-  readTimeout: {{ .Values.app.readTimeout | quote }}
-  idleTimeout: {{ .Values.app.idleTimeout | quote }}
-  seedOnDeploy: {{ .Values.app.seedOnDeploy | quote }}
+  KIDSBOARD_ADDR:             {{ .Values.app.addr | quote }}
+  KIDSBOARD_DB:               {{ .Values.app.dbPath | quote }}
+  KIDSBOARD_SHUTDOWN_TIMEOUT: {{ .Values.app.shutdownTimeout | quote }}
+  KIDSBOARD_READ_TIMEOUT:     {{ .Values.app.readTimeout | quote }}
+  KIDSBOARD_IDLE_TIMEOUT:     {{ .Values.app.idleTimeout | quote }}
+  KIDSBOARD_LOG_LEVEL:        {{ .Values.app.logLevel | quote }}
+  KIDSBOARD_LOG_FORMAT:       {{ .Values.app.logFormat | quote }}

@@ -6,9 +6,8 @@ import (
 
 	"cantillo.dev/kidsboard/internal/storage"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
-
-var migrateDBPath string
 
 // migrateCmd applies pending schema migrations and exits. Designed to be run
 // as a Kubernetes init container before the main `serve` container starts.
@@ -16,22 +15,23 @@ var migrateDBPath string
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Apply pending database migrations and exit",
-	Long: `Opens the SQLite database at --db, runs any pending goose migrations,
-checkpoints the WAL, and exits. Idempotent: running with no pending
-migrations is a fast no-op. Intended for init containers and CI deploys.`,
+	Long: `Opens the SQLite database at --db (or $KIDSBOARD_DB), runs any
+pending goose migrations, checkpoints the WAL, and exits.
+Idempotent: a no-op when nothing is pending. Intended for init containers.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		db, err := storage.OpenSQLite(ctx, migrateDBPath)
+		db, err := storage.OpenSQLite(ctx, viper.GetString("db"))
 		if err != nil {
 			return fmt.Errorf("open db: %w", err)
 		}
-		// OpenSQLite already ran migrations on open. Close cleanly so the WAL
-		// is checkpointed back into the main file before the container exits.
 		return storage.Close(db)
 	},
 }
 
 func init() {
-	migrateCmd.Flags().StringVar(&migrateDBPath, "db", "kidsboard.db", "SQLite database file path")
+	migrateCmd.Flags().String("db", "kidsboard.db", "SQLite database file path")
+	// `db` is shared with `serve` and `seed` — the same viper key powers all
+	// three. Re-binding is harmless: viper overwrites the previous flag bind.
+	must(viper.BindPFlag("db", migrateCmd.Flags().Lookup("db")))
 	rootCmd.AddCommand(migrateCmd)
 }

@@ -39,14 +39,16 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       # Init container runs schema migrations BEFORE the main container starts.
       # Goose is idempotent — already-applied migrations are a fast no-op.
+      # Each container reads config via env vars (12-factor §III) sourced from
+      # the ConfigMap below.
       initContainers:
         - name: migrate
           image: {{ include "kidsboard.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
-            - migrate
-            - --db
-            - {{ .Values.app.dbPath | quote }}
+          args: ["migrate"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kidsboard.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
@@ -58,10 +60,10 @@ spec:
         - name: seed
           image: {{ include "kidsboard.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
-            - seed
-            - --db
-            - {{ .Values.app.dbPath | quote }}
+          args: ["seed"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kidsboard.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
@@ -74,26 +76,18 @@ spec:
         - name: kidsboard
           image: {{ include "kidsboard.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
-            - serve
-            - --addr
-            - {{ .Values.app.addr | quote }}
-            - --db
-            - {{ .Values.app.dbPath | quote }}
-            - --shutdown-timeout
-            - {{ .Values.app.shutdownTimeout | quote }}
-            - --read-timeout
-            - {{ .Values.app.readTimeout | quote }}
-            - --idle-timeout
-            - {{ .Values.app.idleTimeout | quote }}
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
+          args: ["serve"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kidsboard.fullname" . }}
           {{- with .Values.extraEnv }}
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
