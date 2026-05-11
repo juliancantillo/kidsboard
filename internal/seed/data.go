@@ -47,6 +47,8 @@ var Categories = []CategorySeed{
 	{Slug: "lectura", Name: "Lectura", Description: "Hábitos de lectura y exploración de historias.", Icon: "scroll", Color: "#8B5CF6"},
 	{Slug: "deporte", Name: "Deporte", Description: "Actividad física y deportes.", Icon: "bow", Color: "#F97316"},
 	{Slug: "arte", Name: "Arte y Música", Description: "Creatividad, música y expresión artística.", Icon: "trumpet", Color: "#EC4899"},
+	{Slug: "fe", Name: "Fe", Description: "Vida espiritual: oración, sacramentos y lectura de la Biblia.", Icon: "lamp", Color: "#D9A441"},
+	{Slug: "comidas", Name: "Comidas", Description: "Comer a tiempo y con buen ánimo: desayuno, almuerzo y cena.", Icon: "cheese", Color: "#F59E0B"},
 }
 
 // ActivityTypes — what kids actually do. XP rewards effort; points reward
@@ -71,7 +73,9 @@ var ActivityTypes = []ActivityTypeSeed{
 	{CategorySlug: "higiene", Slug: "lavarse-manos", Name: "Lavarse las manos", XPPerUnit: 1, PointsPerUnit: 0},
 	// Lectura
 	{CategorySlug: "lectura", Slug: "leer-30min", Name: "Leer 30 minutos", XPPerUnit: 10, PointsPerUnit: 5},
+	{CategorySlug: "lectura", Slug: "leer-1h", Name: "Leer 1 hora", XPPerUnit: 20, PointsPerUnit: 10},
 	{CategorySlug: "lectura", Slug: "terminar-libro", Name: "Terminar un libro", XPPerUnit: 50, PointsPerUnit: 25},
+	{CategorySlug: "lectura", Slug: "resumen-libro", Name: "Hacer resumen de un libro", XPPerUnit: 30, PointsPerUnit: 15},
 	// Deporte
 	{CategorySlug: "deporte", Slug: "ejercicio", Name: "Hacer ejercicio", XPPerUnit: 15, PointsPerUnit: 8},
 	{CategorySlug: "deporte", Slug: "entrenamiento", Name: "Entrenamiento deportivo", XPPerUnit: 20, PointsPerUnit: 10},
@@ -79,6 +83,16 @@ var ActivityTypes = []ActivityTypeSeed{
 	// Arte
 	{CategorySlug: "arte", Slug: "practicar-musica", Name: "Practicar instrumento", XPPerUnit: 15, PointsPerUnit: 8},
 	{CategorySlug: "arte", Slug: "dibujar", Name: "Dibujar o pintar", XPPerUnit: 10, PointsPerUnit: 5},
+	// Fe — vida espiritual. Eucaristía y Laudes pesan más en XP por su importancia.
+	{CategorySlug: "fe", Slug: "eucaristia", Name: "Asistir a la Eucaristía", XPPerUnit: 50, PointsPerUnit: 25},
+	{CategorySlug: "fe", Slug: "laudes", Name: "Rezar Laudes", XPPerUnit: 30, PointsPerUnit: 12},
+	{CategorySlug: "fe", Slug: "rosario", Name: "Rezar el Rosario", XPPerUnit: 20, PointsPerUnit: 10},
+	{CategorySlug: "fe", Slug: "lectura-biblia", Name: "Leer la Biblia", XPPerUnit: 12, PointsPerUnit: 6},
+	{CategorySlug: "fe", Slug: "oracion-noche", Name: "Oración antes de dormir", XPPerUnit: 5, PointsPerUnit: 2},
+	// Comidas — comer a tiempo. XP modesta pero la constancia es lo que importa.
+	{CategorySlug: "comidas", Slug: "desayuno-rapido", Name: "Desayuno a tiempo", XPPerUnit: 5, PointsPerUnit: 2},
+	{CategorySlug: "comidas", Slug: "almuerzo-rapido", Name: "Almuerzo a tiempo", XPPerUnit: 5, PointsPerUnit: 2},
+	{CategorySlug: "comidas", Slug: "cena-rapida", Name: "Cena a tiempo", XPPerUnit: 5, PointsPerUnit: 2},
 }
 
 // Achievements — RPG-flavored Spanish milestones with humorous flair.
@@ -183,5 +197,104 @@ var Achievements = []AchievementSeed{
 		Description: "Has alcanzado el quinto nivel de tu maestría doméstica. La armadura de la escoba es tuya.",
 		Combinator:  "ALL", BonusPoints: 40,
 		Rules: []RuleSeed{{CategorySlug: "quehaceres", Metric: "level", Threshold: 5}},
+	},
+	{
+		Slug: "senor-quehaceres", Name: "Señor de los Quehaceres", Title: "Señor de la Escoba",
+		Description: "Décimo nivel doméstico. Las leyendas del hogar se cuentan tu nombre primero.",
+		Combinator:  "ALL", BonusPoints: 200,
+		Rules: []RuleSeed{{CategorySlug: "quehaceres", Metric: "level", Threshold: 10}},
+	},
+
+	// --- Lectura -------------------------------------------------------------
+	{
+		Slug: "lector-devoto", Name: "Lector Devoto", Title: "Devoto de las Páginas",
+		Description: "Treinta sesiones con un libro abierto. Cada página es un peldaño más alto.",
+		Combinator:  "ALL", BonusPoints: 60,
+		Rules: []RuleSeed{{CategorySlug: "lectura", Metric: "count", Threshold: 30}},
+	},
+	{
+		Slug: "cazador-mundos", Name: "Cazador de Mundos", Title: "Cazador de Mundos",
+		Description: "Nivel 5 en Lectura — has caminado por mundos que pocos visitan.",
+		Combinator:  "ALL", BonusPoints: 100,
+		Rules: []RuleSeed{{CategorySlug: "lectura", Metric: "level", Threshold: 5}},
+	},
+
+	// --- Fe (vida espiritual) ------------------------------------------------
+	{
+		Slug: "aprendiz-alba", Name: "Aprendiz del Alba", Title: "Madrugador del Alba",
+		Description: "Cuatro momentos de Fe. Tu día empieza con luz en el corazón.",
+		Combinator:  "ALL", BonusPoints: 25,
+		Rules: []RuleSeed{{CategorySlug: "fe", Metric: "count", Threshold: 4}},
+	},
+	{
+		Slug: "peregrino-domingo", Name: "Peregrino del Domingo", Title: "Peregrino Dominical",
+		Description: "200 XP en Fe — equivalente a varios domingos en Eucaristía. El camino se hace andando.",
+		Combinator:  "ALL", BonusPoints: 75,
+		Rules: []RuleSeed{{CategorySlug: "fe", Metric: "xp", Threshold: 200}},
+	},
+	{
+		Slug: "hijo-luz", Name: "Hijo de la Luz", Title: "Hijo de la Luz",
+		Description: "Treinta momentos sagrados. Tu lámpara arde sin descanso, como las vírgenes prudentes.",
+		Combinator:  "ALL", BonusPoints: 75,
+		Rules: []RuleSeed{{CategorySlug: "fe", Metric: "count", Threshold: 30}},
+	},
+	{
+		Slug: "pequeno-discipulo", Name: "Pequeño Discípulo", Title: "Discípulo Fiel",
+		Description: "500 XP en Fe. Has elegido seguir los pasos del Maestro con perseverancia.",
+		Combinator:  "ALL", BonusPoints: 120,
+		Rules: []RuleSeed{{CategorySlug: "fe", Metric: "xp", Threshold: 500}},
+	},
+	{
+		Slug: "corazon-orante", Name: "Corazón Orante", Title: "Corazón en Oración",
+		Description: "Nivel 5 en Fe — la oración es ya el latido de tu día.",
+		Combinator:  "ALL", BonusPoints: 150,
+		Rules: []RuleSeed{{CategorySlug: "fe", Metric: "level", Threshold: 5}},
+	},
+
+	// --- Comidas (puntualidad y disciplina en la mesa) -----------------------
+	{
+		Slug: "puntual-mesa", Name: "Puntual en la Mesa", Title: "Caballero de la Mesa",
+		Description: "Diez comidas a tiempo. Tu silla no espera, te recibe.",
+		Combinator:  "ALL", BonusPoints: 20,
+		Rules: []RuleSeed{{CategorySlug: "comidas", Metric: "count", Threshold: 10}},
+	},
+	{
+		Slug: "tres-tiempos", Name: "Maestro de los Tres Tiempos", Title: "Señor de Desayunos",
+		Description: "Treinta comidas puntuales: el desayuno, el almuerzo y la cena conocen tu disciplina.",
+		Combinator:  "ALL", BonusPoints: 50,
+		Rules: []RuleSeed{{CategorySlug: "comidas", Metric: "count", Threshold: 30}},
+	},
+	{
+		Slug: "disciplina-mesa", Name: "Disciplina de la Mesa", Title: "Disciplina de Hierro",
+		Description: "Nivel 3 en Comidas. Llegar a tiempo es una pequeña victoria diaria.",
+		Combinator:  "ALL", BonusPoints: 70,
+		Rules: []RuleSeed{{CategorySlug: "comidas", Metric: "level", Threshold: 3}},
+	},
+
+	// --- Ahorro (puntos globales acumulados) ---------------------------------
+	// Estos son escalones progresivos que celebran ahorrar antes de gastar.
+	{
+		Slug: "ahorrador-novato", Name: "Ahorrador Novato", Title: "Aprendiz del Cofre",
+		Description: "Tus primeras 100 monedas. La paciencia es un escudo.",
+		Combinator:  "ALL", BonusPoints: 0,
+		Rules: []RuleSeed{{CategorySlug: "", Metric: "points", Threshold: 100}},
+	},
+	{
+		Slug: "ahorrador-cuidadoso", Name: "Ahorrador Cuidadoso", Title: "Guardián del Cofre",
+		Description: "250 monedas en tu bolsillo. Hoy posees algo que muchos no llegan a ver.",
+		Combinator:  "ALL", BonusPoints: 0,
+		Rules: []RuleSeed{{CategorySlug: "", Metric: "points", Threshold: 250}},
+	},
+	{
+		Slug: "tesorero-leyenda", Name: "Tesorero Legendario", Title: "Tesorero Legendario",
+		Description: "2500 monedas. Tu cofre rebosa y los bardos cantan tu nombre.",
+		Combinator:  "ALL", BonusPoints: 0,
+		Rules: []RuleSeed{{CategorySlug: "", Metric: "points", Threshold: 2500}},
+	},
+	{
+		Slug: "gran-tesorero", Name: "Gran Tesorero", Title: "Gran Tesorero del Reino",
+		Description: "5000 monedas — solo los más constantes llegan a este peldaño.",
+		Combinator:  "ALL", BonusPoints: 0,
+		Rules: []RuleSeed{{CategorySlug: "", Metric: "points", Threshold: 5000}},
 	},
 }
