@@ -1,10 +1,14 @@
 {{ define "admin_nav" }}
 <nav class="mb-6 flex flex-wrap gap-2 reveal">
-  <a href="/admin"               class="btn-pixel text-sm uppercase {{ if eq . "kids" }}bg-ember text-parchment{{ else }}bg-surface text-ink hover:bg-surface-mid{{ end }}">
+  <a href="/admin"                 class="btn-pixel text-sm uppercase {{ if eq . "kids" }}bg-ember text-parchment{{ else }}bg-surface text-ink hover:bg-surface-mid{{ end }}">
     <img src="{{ iconSrc "crown" }}" class="pixel w-5 h-5 mr-2" alt="" />
     Personajes
   </a>
-  <a href="/admin/achievements"  class="btn-pixel text-sm uppercase {{ if eq . "achievements" }}bg-ember text-parchment{{ else }}bg-surface text-ink hover:bg-surface-mid{{ end }}">
+  <a href="/admin/activity-types"  class="btn-pixel text-sm uppercase {{ if eq . "activity_types" }}bg-ember text-parchment{{ else }}bg-surface text-ink hover:bg-surface-mid{{ end }}">
+    <img src="{{ iconSrc "scroll" }}" class="pixel w-5 h-5 mr-2" alt="" />
+    Actividades
+  </a>
+  <a href="/admin/achievements"    class="btn-pixel text-sm uppercase {{ if eq . "achievements" }}bg-ember text-parchment{{ else }}bg-surface text-ink hover:bg-surface-mid{{ end }}">
     <img src="{{ iconSrc "chest" }}" class="pixel w-5 h-5 mr-2" alt="" />
     Logros
   </a>

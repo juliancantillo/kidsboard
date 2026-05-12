@@ -9,6 +9,10 @@ SELECT * FROM activity_types
 WHERE archived_at IS NULL
 ORDER BY category_id, name;
 
+-- name: ListAllActivityTypes :many
+SELECT * FROM activity_types
+ORDER BY archived_at IS NOT NULL, category_id, name;
+
 -- name: ListActivityTypesByCategory :many
 SELECT * FROM activity_types
 WHERE category_id = ? AND archived_at IS NULL

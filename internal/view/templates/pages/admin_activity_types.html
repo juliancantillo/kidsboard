@@ -1,0 +1,100 @@
+{{ define "title" }}Actividades · Kidsboard{{ end }}
+{{ define "bg-name" }}meadow{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+{{ template "admin_nav" "activity_types" }}
+
+<header class="mb-6 reveal reveal-d1 flex items-end justify-between gap-4 flex-wrap">
+  <div>
+    <p class="font-label text-xs uppercase tracking-[0.3em] text-outline mb-1">Modo Padres</p>
+    <h2 class="font-display font-black uppercase tracking-tight text-3xl md:text-4xl">Actividades</h2>
+    <p class="font-body text-ink-soft mt-1">Define qué se puede registrar y cuánta experiencia y monedas otorga.</p>
+  </div>
+  <a href="/admin/activity-types/new" class="btn-pixel bg-moss text-parchment text-sm">
+    <img src="{{ iconSrc "scroll" }}" class="pixel w-5 h-5 mr-2" alt="" />
+    Nueva actividad
+  </a>
+</header>
+
+{{ if .Groups }}
+<div class="space-y-8 reveal reveal-d2">
+  {{ range .Groups }}
+  <section>
+    <header class="flex items-baseline justify-between gap-3 mb-3 border-b-4 border-ink pb-2">
+      <div class="flex items-center gap-3 min-w-0">
+        {{ with iconSrc (deref .Category.Icon) }}
+        <img src="{{ . }}" class="pixel w-7 h-7 shrink-0" alt="" />
+        {{ end }}
+        <div class="min-w-0">
+          <h3 class="font-display font-black uppercase tracking-tight text-xl truncate">{{ .Category.Name }}</h3>
+          <p class="font-label text-[10px] uppercase tracking-widest text-outline">{{ .Category.Slug }}</p>
+        </div>
+      </div>
+      <a href="/admin/activity-types/new?category_id={{ .Category.ID }}"
+         class="font-label text-[11px] uppercase tracking-widest text-outline hover:text-ink whitespace-nowrap">
+        + agregar a {{ .Category.Name }}
+      </a>
+    </header>
+
+    {{ if .ActivityTypes }}
+    <ul class="space-y-2">
+      {{ range .ActivityTypes }}
+      <li class="bg-surface-low border-4 border-ink shadow-pixel-sm p-3 flex items-center gap-4 {{ if .ArchivedAt }}opacity-60{{ end }}">
+        <div class="flex-1 min-w-0">
+          <p class="font-display font-black text-base leading-tight truncate">{{ .Name }}</p>
+          <p class="font-label text-[10px] uppercase tracking-widest text-outline">{{ .Slug }}</p>
+          {{ if .Description }}
+          <p class="font-body text-xs text-ink-soft italic mt-1 line-clamp-2">{{ deref .Description }}</p>
+          {{ end }}
+        </div>
+
+        <div class="text-right shrink-0">
+          <span class="font-label text-[10px] uppercase tracking-widest text-outline block">XP / Puntos</span>
+          <p class="font-display font-black text-sm leading-tight">
+            <span class="text-moss">+{{ fmtInt .XPPerUnit }}</span>
+            <span class="text-outline mx-1">·</span>
+            <span class="inline-flex items-center gap-1 text-ember">
+              <img src="{{ iconSrc "coin" }}" class="pixel w-3.5 h-3.5" alt="" />
+              {{ fmtInt .PointsPerUnit }}
+            </span>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="/admin/activity-types/{{ .ID }}/edit"
+             class="border-2 border-ink p-1.5 bg-surface-mid hover:bg-ember hover:text-parchment transition-colors" title="Editar">
+            <span class="material-symbols-outlined" style="font-size:18px">edit</span>
+          </a>
+          {{ if not .ArchivedAt }}
+          <form action="/admin/activity-types/{{ .ID }}/archive" method="POST"
+                onsubmit="return confirm('¿Archivar &quot;{{ .Name }}&quot;? Las actividades ya registradas no se ven afectadas, pero no se podrán registrar nuevas.');">
+            <button class="border-2 border-ink p-1.5 bg-blood-soft hover:bg-blood hover:text-parchment transition-colors" title="Archivar">
+              <span class="material-symbols-outlined" style="font-size:18px">archive</span>
+            </button>
+          </form>
+          {{ else }}
+          <form action="/admin/activity-types/{{ .ID }}/unarchive" method="POST">
+            <button class="border-2 border-ink p-1.5 bg-moss-soft hover:bg-moss hover:text-parchment transition-colors" title="Reactivar">
+              <span class="material-symbols-outlined" style="font-size:18px">restore</span>
+            </button>
+          </form>
+          {{ end }}
+        </div>
+      </li>
+      {{ end }}
+    </ul>
+    {{ else }}
+    <p class="font-body text-sm text-outline italic">Sin actividades en esta categoría todavía.</p>
+    {{ end }}
+  </section>
+  {{ end }}
+</div>
+{{ else }}
+<section class="text-center bg-surface-low border-4 border-ink shadow-pixel p-8 reveal reveal-d2">
+  <p class="font-body text-ink-soft">No hay categorías activas. Ejecuta <code class="font-label">kidsboard seed</code> para cargar las predeterminadas.</p>
+</section>
+{{ end }}
+
+{{ end }}
+{{ end }}

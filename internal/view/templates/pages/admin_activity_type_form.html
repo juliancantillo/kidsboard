@@ -1,0 +1,93 @@
+{{ define "title" }}{{ with .Data }}{{ if .IsEdit }}Editar{{ else }}Nueva{{ end }} actividad{{ end }} · Kidsboard{{ end }}
+{{ define "bg-name" }}meadow{{ end }}
+
+{{ define "content" }}
+{{ with .Data }}
+{{ template "admin_nav" "activity_types" }}
+
+<header class="mb-6 reveal reveal-d1">
+  <p class="font-label text-xs uppercase tracking-[0.3em] text-outline mb-1">Modo Padres · Actividades</p>
+  <h2 class="font-display font-black uppercase tracking-tight text-3xl md:text-4xl">
+    {{ if .IsEdit }}Editar actividad{{ else }}Nueva actividad{{ end }}
+  </h2>
+  {{ if .IsEdit }}<p class="font-body text-ink-soft mt-1">{{ .ActivityType.Name }}</p>{{ end }}
+</header>
+
+<form action="{{ if .IsEdit }}/admin/activity-types/{{ .ActivityType.ID }}{{ else }}/admin/activity-types{{ end }}" method="POST"
+      class="bg-surface-low border-4 border-ink shadow-pixel-lg p-6 reveal reveal-d2 space-y-6">
+
+  <label class="block">
+    <span class="font-label text-xs uppercase tracking-widest text-outline">Categoría</span>
+    <select name="category_id" required
+            class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">
+      <option value="">— elige una —</option>
+      {{ $form := .Form }}
+      {{ range .Categories }}
+      <option value="{{ .ID }}" {{ if eq $form.CategoryID .ID }}selected{{ end }}>{{ .Name }}</option>
+      {{ end }}
+    </select>
+    {{ with index .Errors "category_id" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+  </label>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Slug</span>
+      <input type="text" name="slug" value="{{ .Form.Slug }}" required maxlength="60"
+             pattern="[a-z0-9\-]+" placeholder="ej. lavar-platos"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body lowercase {{ if .IsEdit }}bg-surface-mid{{ end }}"
+             {{ if .IsEdit }}readonly{{ end }} />
+      {{ with index .Errors "slug" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Nombre</span>
+      <input type="text" name="name" value="{{ .Form.Name }}" required maxlength="100"
+             placeholder="ej. Lavar los platos"
+             class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body" />
+      {{ with index .Errors "name" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+  </div>
+
+  <label class="block">
+    <span class="font-label text-xs uppercase tracking-widest text-outline">Descripción</span>
+    <textarea name="description" rows="2" maxlength="500"
+              placeholder="Opcional. Cuándo cuenta, cómo se mide..."
+              class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">{{ .Form.Description }}</textarea>
+  </label>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">XP por unidad</span>
+      <div class="mt-1 flex items-center gap-2">
+        <input type="number" name="xp_per_unit" value="{{ .Form.XPPerUnit }}" min="0" step="1" required
+               class="flex-1 border-4 border-ink bg-surface p-2 font-body" />
+        <span class="font-display font-black text-moss text-lg">XP</span>
+      </div>
+      {{ with index .Errors "xp_per_unit" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+
+    <label class="block">
+      <span class="font-label text-xs uppercase tracking-widest text-outline">Puntos por unidad</span>
+      <div class="mt-1 flex items-center gap-2">
+        <input type="number" name="points_per_unit" value="{{ .Form.PointsPerUnit }}" min="0" step="1" required
+               class="flex-1 border-4 border-ink bg-surface p-2 font-body" />
+        <img src="{{ iconSrc "coin" }}" class="pixel w-6 h-6" alt="" />
+      </div>
+      {{ with index .Errors "points_per_unit" }}<p class="mt-1 font-label text-xs text-blood uppercase">{{ . }}</p>{{ end }}
+    </label>
+  </div>
+
+  <p class="font-label text-[11px] uppercase tracking-widest text-outline">
+    El total otorgado a cada actividad registrada es <strong>cantidad × XP</strong> y <strong>cantidad × puntos</strong>.
+  </p>
+
+  <div class="flex items-center justify-between border-t-4 border-ink pt-4">
+    <a href="/admin/activity-types" class="font-label text-sm uppercase tracking-widest text-outline hover:text-ink">← Cancelar</a>
+    <button class="btn-pixel bg-moss text-parchment">
+      <span class="material-symbols-outlined mr-2" style="font-size:20px">save</span>
+      {{ if .IsEdit }}Guardar cambios{{ else }}Crear actividad{{ end }}
+    </button>
+  </div>
+</form>
+{{ end }}
+{{ end }}

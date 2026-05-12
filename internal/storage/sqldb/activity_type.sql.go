@@ -177,6 +177,44 @@ func (q *Queries) ListActivityTypesByCategory(ctx context.Context, categoryID in
 	return items, nil
 }
 
+const listAllActivityTypes = `-- name: ListAllActivityTypes :many
+SELECT id, category_id, slug, name, description, xp_per_unit, points_per_unit, archived_at, created_at FROM activity_types
+ORDER BY archived_at IS NOT NULL, category_id, name
+`
+
+func (q *Queries) ListAllActivityTypes(ctx context.Context) ([]ActivityType, error) {
+	rows, err := q.db.QueryContext(ctx, listAllActivityTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ActivityType{}
+	for rows.Next() {
+		var i ActivityType
+		if err := rows.Scan(
+			&i.ID,
+			&i.CategoryID,
+			&i.Slug,
+			&i.Name,
+			&i.Description,
+			&i.XpPerUnit,
+			&i.PointsPerUnit,
+			&i.ArchivedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const unarchiveActivityType = `-- name: UnarchiveActivityType :exec
 UPDATE activity_types SET archived_at = NULL WHERE id = ?
 `
