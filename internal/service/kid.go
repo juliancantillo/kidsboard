@@ -17,8 +17,10 @@ import (
 type KidService interface {
 	Get(ctx context.Context, db storage.DBTX, id int64) (domain.Kid, error)
 	ListActive(ctx context.Context, db storage.DBTX) ([]domain.Kid, error)
+	ListAll(ctx context.Context, db storage.DBTX) ([]domain.Kid, error)
 	Create(ctx context.Context, db storage.DBTX, in CreateKidInput) (domain.Kid, error)
 	Archive(ctx context.Context, db storage.DBTX, id int64) error
+	Unarchive(ctx context.Context, db storage.DBTX, id int64) error
 }
 
 // CreateKidInput is the form-shape used by the admin parent flow.
@@ -62,6 +64,18 @@ func (s *kidService) ListActive(ctx context.Context, db storage.DBTX) ([]domain.
 	return out, nil
 }
 
+func (s *kidService) ListAll(ctx context.Context, db storage.DBTX) ([]domain.Kid, error) {
+	rows, err := sqldb.New(db).ListKids(ctx, int64(1))
+	if err != nil {
+		return nil, fmt.Errorf("list kids: %w", err)
+	}
+	out := make([]domain.Kid, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, kidFromRow(r))
+	}
+	return out, nil
+}
+
 func (s *kidService) Create(ctx context.Context, db storage.DBTX, in CreateKidInput) (domain.Kid, error) {
 	if err := s.validateCreate(in); err != nil {
 		return domain.Kid{}, err
@@ -81,6 +95,13 @@ func (s *kidService) Create(ctx context.Context, db storage.DBTX, in CreateKidIn
 func (s *kidService) Archive(ctx context.Context, db storage.DBTX, id int64) error {
 	if err := sqldb.New(db).ArchiveKid(ctx, id); err != nil {
 		return fmt.Errorf("archive kid: %w", err)
+	}
+	return nil
+}
+
+func (s *kidService) Unarchive(ctx context.Context, db storage.DBTX, id int64) error {
+	if err := sqldb.New(db).UnarchiveKid(ctx, id); err != nil {
+		return fmt.Errorf("unarchive kid: %w", err)
 	}
 	return nil
 }

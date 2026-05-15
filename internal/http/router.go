@@ -33,6 +33,7 @@ func NewRouter(deps Deps) http.Handler {
 	mux.HandleFunc("GET /admin/kids/new", admin.NewKid)
 	mux.HandleFunc("POST /admin/kids", admin.CreateKid)
 	mux.HandleFunc("POST /admin/kids/{id}/archive", admin.ArchiveKid)
+	mux.HandleFunc("POST /admin/kids/{id}/unarchive", admin.UnarchiveKid)
 	mux.HandleFunc("POST /admin/activities", admin.LogActivity)
 	mux.HandleFunc("GET /admin/activity-types", adminActivityTypes.Index)
 	mux.HandleFunc("GET /admin/activity-types/new", adminActivityTypes.New)

@@ -21,19 +21,30 @@
   {{ if .Kids }}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     {{ range .Kids }}
-    <div class="bg-surface-low border-4 border-ink shadow-pixel p-4 flex items-center gap-4">
+    <div class="bg-surface-low border-4 border-ink shadow-pixel p-4 flex items-center gap-4 {{ if .ArchivedAt }}opacity-60{{ end }}">
       <div class="w-16 h-16 border-4 border-ink shadow-pixel-sm" style="background: {{ .Color }};">
         <img class="pixel w-full h-full object-cover" src="{{ avatarSrc .AvatarSlug }}" alt="{{ .Name }}" />
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-display font-black text-lg uppercase truncate">{{ .Name }}</p>
-        <p class="font-label text-xs uppercase tracking-widest text-outline">{{ .Color }}</p>
+        <p class="font-label text-xs uppercase tracking-widest text-outline">
+          {{ if .ArchivedAt }}Archivado{{ else }}{{ .Color }}{{ end }}
+        </p>
       </div>
-      <form action="/admin/kids/{{ .ID }}/archive" method="POST">
+      {{ if not .ArchivedAt }}
+      <form action="/admin/kids/{{ .ID }}/archive" method="POST"
+            onsubmit="return confirm('¿Archivar a &quot;{{ .Name }}&quot;? Su perfil se ocultará del tablero, pero el historial se conserva y podrás reactivarlo más tarde.');">
         <button class="border-2 border-ink p-1.5 bg-blood-soft hover:bg-blood hover:text-parchment transition-colors" title="Archivar">
           <span class="material-symbols-outlined" style="font-size:18px">archive</span>
         </button>
       </form>
+      {{ else }}
+      <form action="/admin/kids/{{ .ID }}/unarchive" method="POST">
+        <button class="border-2 border-ink p-1.5 bg-moss-soft hover:bg-moss hover:text-parchment transition-colors" title="Reactivar">
+          <span class="material-symbols-outlined" style="font-size:18px">restore</span>
+        </button>
+      </form>
+      {{ end }}
     </div>
     {{ end }}
   </div>
@@ -46,13 +57,13 @@
 
 <section class="reveal reveal-d2">
   <h3 class="font-display font-black uppercase tracking-tight text-xl mb-3">Registrar actividad</h3>
-  {{ if and .Kids .ActivityTypes }}
+  {{ if and .ActiveKids .ActivityTypes }}
   <form action="/admin/activities" method="POST" class="bg-surface-low border-4 border-ink shadow-pixel-lg p-5 space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <label class="block">
         <span class="font-label text-xs uppercase tracking-widest text-outline">Personaje</span>
         <select name="kid_id" required class="mt-1 w-full border-4 border-ink bg-surface p-2 font-body">
-          {{ range .Kids }}
+          {{ range .ActiveKids }}
           <option value="{{ .ID }}">{{ .Name }}</option>
           {{ end }}
         </select>

@@ -40,17 +40,24 @@ func NewAdmin(
 }
 
 type AdminIndexView struct {
-	Kids          []domain.Kid
+	Kids          []domain.Kid // all (active + archived) — for the personajes grid
+	ActiveKids    []domain.Kid // for the activity-log dropdown
 	ActivityTypes []domain.ActivityType
 	Categories    []domain.Category
 }
 
 func (c *Admin) Index(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	kids, err := c.kids.ListActive(ctx, c.db)
+	kids, err := c.kids.ListAll(ctx, c.db)
 	if err != nil {
 		fail(w, "list kids", err)
 		return
+	}
+	active := make([]domain.Kid, 0, len(kids))
+	for _, k := range kids {
+		if k.ArchivedAt == nil {
+			active = append(active, k)
+		}
 	}
 	types, err := c.activityTypes.ListActive(ctx, c.db)
 	if err != nil {
@@ -62,7 +69,12 @@ func (c *Admin) Index(w http.ResponseWriter, r *http.Request) {
 		fail(w, "list categories", err)
 		return
 	}
-	c.renderOrFail(w, "admin", AdminIndexView{Kids: kids, ActivityTypes: types, Categories: cats})
+	c.renderOrFail(w, "admin", AdminIndexView{
+		Kids:          kids,
+		ActiveKids:    active,
+		ActivityTypes: types,
+		Categories:    cats,
+	})
 }
 
 type NewKidView struct {
@@ -122,6 +134,19 @@ func (c *Admin) ArchiveKid(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := c.kids.Archive(r.Context(), c.db, id); err != nil {
 		fail(w, "archive kid", err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func (c *Admin) UnarchiveKid(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "bad id", http.StatusBadRequest)
+		return
+	}
+	if err := c.kids.Unarchive(r.Context(), c.db, id); err != nil {
+		fail(w, "unarchive kid", err)
 		return
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
